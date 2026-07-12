@@ -1,22 +1,28 @@
-# Vishnu — Hour 4
+# Karthik — Hour 4
 
-Allocations UI and first analytics cut. Allocate/return/transfer flows with conflict modal, utilization + maintenance-frequency charts (Recharts now in package.json), and live routes for allocations and reports. Heatmap, department chart, attention lists, and CSV export land next hours.
+Allocations and transfers, and the full API surface (minus dashboard). Allocate/return with conflict envelope, transfer request approve/reject (atomic reallocation), allocation guard migration, and app.ts mounting allocations, transfers, bookings, maintenance, audits, notifications, activity, and reports.
 
 ## Files
 
-- `frontend/src/features/allocations/AllocationsPage.tsx`
-- `frontend/src/features/reports/ReportsPage.tsx`
-- `frontend/src/routes/index.tsx`
-- `frontend/package.json`
+- `backend/src/modules/allocations/allocation.controller.ts`
+- `backend/src/modules/allocations/allocation.routes.ts`
+- `backend/src/modules/allocations/allocation.schemas.ts`
+- `backend/src/modules/allocations/allocation.service.ts`
+- `backend/src/modules/transfers/transfer.controller.ts`
+- `backend/src/modules/transfers/transfer.routes.ts`
+- `backend/src/modules/transfers/transfer.schemas.ts`
+- `backend/src/modules/transfers/transfer.service.ts`
+- `backend/prisma/migrations/20260712091847_allocation_guards/migration.sql`
+- `backend/src/app.ts`
 
 ## Suggested commit message
 
 ```
-feat(allocations-ui,reports): allocation workflows and initial report charts
+feat(allocations): allocate/return, transfers, mount remaining domain routes
 ```
 
 ## Smoke test
 
-1. Open /allocations → allocate asset; conflict on double-hold shows modal with holder
-2. Transfer approve/reject from the transfers tab
-3. /reports shows utilization and maintenance charts for manager roles
+1. `npx prisma migrate dev` applies allocation_guards
+2. Allocate an already-held asset → exact conflict envelope with holder details
+3. Approve a pending transfer → old allocation closed, new opened; return sets AVAILABLE
