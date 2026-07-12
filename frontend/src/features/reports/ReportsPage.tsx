@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { ShieldAlert } from 'lucide-react';
+import { Download, ShieldAlert } from 'lucide-react';
+import { Fragment, useState } from 'react';
 import {
   Bar,
   BarChart,
@@ -9,15 +10,20 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { toast } from 'sonner';
 import type { AssetStatus } from '../../api/types';
 import { api } from '../../api/client';
 import { EmptyState, ErrorState, PageHeader } from '../../components/shared/states';
-import { TagChip } from '../../components/shared/status';
+import { AssetStatusBadge, TagChip } from '../../components/shared/status';
+import { Button } from '../../components/ui/button';
 import { Card, CardHeader, Skeleton } from '../../components/ui/primitives';
 import { usePermissions } from '../../lib/auth';
+import { fmtDate, humanize } from '../../lib/format';
+import { toastApiError } from '../../lib/forms';
 
 const CHART_1 = '#0d9488';
 const CHART_2 = '#6366f1';
+const CHART_3 = '#d97706';
 const INK_SOFT = '#4b5563';
 const LINE = '#e5e7eb';
 
@@ -32,6 +38,21 @@ interface MaintenanceFrequencyReport {
   windowDays: number;
   total: number;
   byCategory: { category: string; count: number }[];
+}
+
+interface DepartmentSummaryReport {
+  departments: { department: string; count: number; overdue: number; totalValue: number }[];
+}
+
+interface HeatmapReport {
+  windowDays: number;
+  cells: number[][];
+  totalBookings: number;
+}
+
+interface AttentionReport {
+  dueForMaintenance: { id: string; assetTag: string; name: string; condition: string; status: AssetStatus; category: { name: string } }[];
+  nearingRetirement: { id: string; assetTag: string; name: string; expectedRetirementDate: string; status: AssetStatus; category: { name: string } }[];
 }
 
 const axisProps = {
@@ -68,8 +89,56 @@ function ChartCard({
   );
 }
 
+const HEATMAP_DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
+const HEATMAP_DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const HEATMAP_HOURS = Array.from({ length: 15 }, (_, i) => i + 7);
+
+function BookingHeatmap({ report }: { report: HeatmapReport }) {
+  const max = Math.max(1, ...report.cells.flat());
+  return (
+    <div className="overflow-x-auto">
+      <div className="min-w-[560px]">
+        <div
+          className="grid gap-0.5"
+          style={{ gridTemplateColumns: `44px repeat(${HEATMAP_HOURS.length}, 1fr)` }}
+        >
+          <div />
+          {HEATMAP_HOURS.map((h) => (
+            <div key={h} className="text-center text-[10px] text-ink-faint">
+              {h % 3 === 1 ? `${((h + 11) % 12) + 1}${h < 12 ? 'a' : 'p'}` : ''}
+            </div>
+          ))}
+          {HEATMAP_DAY_ORDER.map((day, i) => (
+            <Fragment key={day}>
+              <div className="pr-1.5 text-right text-[11px] leading-4 text-ink-soft">
+                {HEATMAP_DAY_LABELS[i]}
+              </div>
+              {HEATMAP_HOURS.map((h) => {
+                const count = report.cells[day]?.[h] ?? 0;
+                const alpha = count === 0 ? 0 : 0.15 + 0.85 * (count / max);
+                return (
+                  <div
+                    key={`${day}-${h}`}
+                    title={`${HEATMAP_DAY_LABELS[i]} ${((h + 11) % 12) + 1}${h < 12 ? ' am' : ' pm'} — ${count} booking(s)`}
+                    className="h-4 rounded-[3px] ring-1 ring-line/60"
+                    style={{ backgroundColor: count === 0 ? '#f6f7f9' : `rgba(13, 148, 136, ${alpha})` }}
+                  />
+                );
+              })}
+            </Fragment>
+          ))}
+        </div>
+        <p className="mt-2 text-[11px] text-ink-faint">
+          {report.totalBookings} booking(s) in the last {report.windowDays} days · darker = busier
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function ReportsPage() {
   const perms = usePermissions();
+  const [exporting, setExporting] = useState<string | null>(null);
 
   const utilization = useQuery({
     queryKey: ['reports', 'utilization'],
@@ -79,6 +148,21 @@ export function ReportsPage() {
   const maintenance = useQuery({
     queryKey: ['reports', 'maintenance-frequency'],
     queryFn: () => api.get<MaintenanceFrequencyReport>('/reports/maintenance-frequency'),
+    enabled: perms.viewReports,
+  });
+  const departments = useQuery({
+    queryKey: ['reports', 'department-summary'],
+    queryFn: () => api.get<DepartmentSummaryReport>('/reports/department-summary'),
+    enabled: perms.viewReports,
+  });
+  const heatmap = useQuery({
+    queryKey: ['reports', 'booking-heatmap'],
+    queryFn: () => api.get<HeatmapReport>('/reports/booking-heatmap'),
+    enabled: perms.viewReports,
+  });
+  const attention = useQuery({
+    queryKey: ['reports', 'attention'],
+    queryFn: () => api.get<AttentionReport>('/reports/attention'),
     enabled: perms.viewReports,
   });
 
@@ -97,6 +181,25 @@ export function ReportsPage() {
     );
   }
 
+  const download = async (path: string, filename: string) => {
+    setExporting(filename);
+    try {
+      await api.download(path, filename);
+      toast.success(`${filename} downloaded.`);
+    } catch (err) {
+      toastApiError(err);
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  const exports = [
+    { label: 'Assets', path: '/reports/export/assets.csv', file: 'assetflow-assets.csv' },
+    { label: 'Allocations', path: '/reports/export/allocations.csv', file: 'assetflow-allocations.csv' },
+    { label: 'Bookings', path: '/reports/export/bookings.csv', file: 'assetflow-bookings.csv' },
+    { label: 'Maintenance', path: '/reports/export/maintenance.csv', file: 'assetflow-maintenance.csv' },
+  ];
+
   const top10 = (utilization.data?.assets ?? []).slice(0, 10).map((a) => ({
     ...a,
     label: a.assetTag,
@@ -107,6 +210,21 @@ export function ReportsPage() {
       <PageHeader
         title="Reports & analytics"
         description="Live aggregations over the real data — nothing precomputed, nothing mocked."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {exports.map((e) => (
+              <Button
+                key={e.file}
+                variant="outline"
+                size="sm"
+                loading={exporting === e.file}
+                onClick={() => download(e.path, e.file)}
+              >
+                <Download className="h-3.5 w-3.5" /> {e.label} CSV
+              </Button>
+            ))}
+          </div>
+        }
       />
 
       <div className="grid gap-4 xl:grid-cols-2">
@@ -168,6 +286,77 @@ export function ReportsPage() {
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
+
+        <ChartCard
+          title="Active allocations by department"
+          description="Where the organization's assets are right now"
+          loading={departments.isLoading}
+          error={departments.isError}
+          onRetry={() => departments.refetch()}
+          empty={(departments.data?.departments ?? []).length === 0}
+        >
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={departments.data?.departments ?? []} margin={{ top: 4, right: 8, left: -24, bottom: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={LINE} vertical={false} />
+              <XAxis dataKey="department" {...axisProps} interval={0} angle={-20} textAnchor="end" height={48} />
+              <YAxis {...axisProps} allowDecimals={false} />
+              <Tooltip
+                formatter={(value, name) => [String(value), name === 'count' ? 'Active allocations' : 'Overdue']}
+              />
+              <Bar dataKey="count" fill={CHART_1} radius={[3, 3, 0, 0]} />
+              <Bar dataKey="overdue" fill={CHART_3} radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <ChartCard
+          title="Booking heatmap"
+          description="Day × hour demand for shared resources"
+          loading={heatmap.isLoading}
+          error={heatmap.isError}
+          onRetry={() => heatmap.refetch()}
+          empty={!heatmap.data || heatmap.data.totalBookings === 0}
+        >
+          {heatmap.data && <BookingHeatmap report={heatmap.data} />}
+        </ChartCard>
+      </div>
+
+      <div className="mt-4 grid gap-4 xl:grid-cols-2">
+        <Card>
+          <CardHeader title="Due for maintenance" description="Poor condition or an open maintenance request" />
+          {attention.isLoading && <Skeleton className="m-4 h-24" />}
+          {attention.isError && <ErrorState onRetry={() => attention.refetch()} />}
+          {attention.data && attention.data.dueForMaintenance.length === 0 && (
+            <EmptyState title="All clear" description="No assets currently need maintenance attention." />
+          )}
+          {attention.data?.dueForMaintenance.map((a) => (
+            <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2.5 last:border-0">
+              <p className="flex items-center gap-1.5 text-[13px] font-medium text-ink">
+                <TagChip tag={a.assetTag} /> {a.name}
+                <span className="text-xs font-normal text-ink-soft">· {a.category.name} · {humanize(a.condition)} condition</span>
+              </p>
+              <AssetStatusBadge status={a.status} />
+            </div>
+          ))}
+        </Card>
+
+        <Card>
+          <CardHeader title="Nearing retirement" description="Expected retirement date within 90 days" />
+          {attention.isLoading && <Skeleton className="m-4 h-24" />}
+          {attention.isError && <ErrorState onRetry={() => attention.refetch()} />}
+          {attention.data && attention.data.nearingRetirement.length === 0 && (
+            <EmptyState title="Nothing retiring soon" description="No assets reach their expected retirement date in the next 90 days." />
+          )}
+          {attention.data?.nearingRetirement.map((a) => (
+            <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2.5 last:border-0">
+              <p className="flex items-center gap-1.5 text-[13px] font-medium text-ink">
+                <TagChip tag={a.assetTag} /> {a.name}
+                <span className="text-xs font-normal text-ink-soft">· {a.category.name}</span>
+              </p>
+              <p className="text-xs font-medium text-state-reserved">Retires {fmtDate(a.expectedRetirementDate)}</p>
+            </div>
+          ))}
+        </Card>
       </div>
     </>
   );

@@ -168,6 +168,83 @@ function NewBookingDialog({
   );
 }
 
+function RescheduleDialog({ booking, onClose }: { booking: Booking | null; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [conflict, setConflict] = useState<ConflictInfo | null>(null);
+  const [fieldError, setFieldError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (booking) {
+      setStartTime(toDatetimeLocal(parseISO(booking.startTime)));
+      setEndTime(toDatetimeLocal(parseISO(booking.endTime)));
+      setConflict(null);
+      setFieldError(null);
+    }
+  }, [booking]);
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      api.post(`/bookings/${booking!.id}/reschedule`, {
+        startTime: new Date(startTime).toISOString(),
+        endTime: new Date(endTime).toISOString(),
+      }),
+    onSuccess: () => {
+      toast.success('Booking rescheduled.');
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      onClose();
+    },
+    onError: (err) => {
+      const c = conflictFromError(err);
+      if (c) setConflict(c);
+      else if (err instanceof ApiError && Object.keys(err.fieldErrors).length > 0)
+        setFieldError(Object.values(err.fieldErrors)[0]);
+      else toastApiError(err);
+    },
+  });
+
+  if (!booking) return null;
+  return (
+    <Dialog
+      open={!!booking}
+      onOpenChange={(o) => !o && onClose()}
+      title={`Reschedule — ${booking.asset.name}`}
+      description={`Currently ${fmtDateTime(booking.startTime)} to ${fmtTime(booking.endTime)}. The overlap check runs again.`}
+    >
+      <div className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="New start" htmlFor="rs-start" required>
+            <Input id="rs-start" type="datetime-local" value={startTime} onChange={(e) => { setStartTime(e.target.value); setConflict(null); }} />
+          </Field>
+          <Field label="New end" htmlFor="rs-end" error={fieldError ?? undefined} required>
+            <Input id="rs-end" type="datetime-local" value={endTime} onChange={(e) => { setEndTime(e.target.value); setConflict(null); }} />
+          </Field>
+        </div>
+        {conflict && <ConflictNotice conflict={conflict} />}
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            loading={mutation.isPending}
+            onClick={() => {
+              setFieldError(null);
+              if (!startTime || !endTime || new Date(endTime) <= new Date(startTime)) {
+                setFieldError('End time must be after start time');
+                return;
+              }
+              mutation.mutate();
+            }}
+          >
+            Reschedule
+          </Button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
 function WeekCalendar({ assetId, resourceName }: { assetId: string; resourceName: string }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const weekStart = useMemo(
@@ -300,6 +377,7 @@ function WeekCalendar({ assetId, resourceName }: { assetId: string; resourceName
 function MyBookings() {
   const queryClient = useQueryClient();
   const [cancelling, setCancelling] = useState<Booking | null>(null);
+  const [rescheduling, setRescheduling] = useState<Booking | null>(null);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['bookings', 'mine'],
@@ -347,6 +425,11 @@ function MyBookings() {
             <BookingStateBadge state={b.derivedState} />
             {(b.derivedState === 'UPCOMING' || b.derivedState === 'ONGOING') && (
               <>
+                {b.derivedState === 'UPCOMING' && (
+                  <Button variant="ghost" size="sm" onClick={() => setRescheduling(b)}>
+                    Reschedule
+                  </Button>
+                )}
                 <Button variant="ghost" size="sm" className="text-state-lost hover:text-state-lost" onClick={() => setCancelling(b)}>
                   Cancel
                 </Button>
@@ -370,6 +453,7 @@ function MyBookings() {
         loading={cancelMutation.isPending}
         onConfirm={() => cancelling && cancelMutation.mutate(cancelling.id)}
       />
+      <RescheduleDialog key={rescheduling?.id ?? 'none'} booking={rescheduling} onClose={() => setRescheduling(null)} />
     </Card>
   );
 }
