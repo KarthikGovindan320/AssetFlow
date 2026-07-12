@@ -7,6 +7,8 @@ import { requestLogger } from './middleware/request-logger';
 import { authRouter } from './modules/auth/auth.routes';
 import { departmentRouter } from './modules/departments/department.routes';
 import { employeeRouter } from './modules/employees/employee.routes';
+import { categoryRouter } from './modules/categories/category.routes';
+import { assetRouter } from './modules/assets/asset.routes';
 
 export function createApp() {
   const app = express();
@@ -21,6 +23,8 @@ export function createApp() {
   app.use('/api/v1/auth', authRouter);
   app.use('/api/v1/departments', departmentRouter);
   app.use('/api/v1/employees', employeeRouter);
+  app.use('/api/v1/categories', categoryRouter);
+  app.use('/api/v1/assets', assetRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found.' } });
