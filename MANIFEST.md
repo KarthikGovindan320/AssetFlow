@@ -1,30 +1,21 @@
-# Karthik — Hour 3
+# Vishnu — Hour 3
 
-Asset directory and lifecycle. Category CRUD, asset registration with auto-generated AF-#### tags (DB sequence migration), search/filter, and the asset status state machine + transition service used by allocations, bookings, maintenance, and audits.
+Asset directory UI. List with filters/search, register dialog with per-field validation, and asset detail with lifecycle history. Routes for /assets and /assets/:id go live; other domain screens stay placeholders.
 
 ## Files
 
-- `backend/src/lib/asset-status-machine.ts`
-- `backend/src/modules/categories/category.controller.ts`
-- `backend/src/modules/categories/category.routes.ts`
-- `backend/src/modules/categories/category.schemas.ts`
-- `backend/src/modules/categories/category.service.ts`
-- `backend/src/modules/assets/asset.controller.ts`
-- `backend/src/modules/assets/asset.routes.ts`
-- `backend/src/modules/assets/asset.schemas.ts`
-- `backend/src/modules/assets/asset.service.ts`
-- `backend/src/modules/assets/asset-status.service.ts`
-- `backend/prisma/migrations/20260712083015_asset_tag_sequence/migration.sql`
-- `backend/src/app.ts`
+- `frontend/src/features/assets/AssetsPage.tsx`
+- `frontend/src/features/assets/AssetDetailPage.tsx`
+- `frontend/src/routes/index.tsx`
 
 ## Suggested commit message
 
 ```
-feat(assets): categories, asset CRUD, tag sequence, lifecycle state machine
+feat(assets-ui): asset directory list, register form, asset detail page
 ```
 
 ## Smoke test
 
-1. `npx prisma migrate dev` applies asset_tag_sequence; register an asset → tag AF-00xx auto-assigned
-2. GET /api/v1/assets supports search by name/tag and status filters
-3. Illegal status transition via service returns 409 with INVALID_STATUS_TRANSITION
+1. Open /assets as Asset Manager → register an asset → appears with auto tag
+2. Search by name or tag; filter by status
+3. Open detail page from a row; validation errors show per field on bad submit
