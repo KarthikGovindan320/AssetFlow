@@ -1,63 +1,46 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router-dom';
-import { z } from 'zod';
-import { ApiError } from '../../api/client';
-import { Button } from '../../components/ui/button';
-import { Field, Input } from '../../components/ui/field';
-import { useAuth } from '../../lib/auth';
-import { AuthLayout } from './AuthLayout';
+# Karthik — Hour 2
 
-const schema = z.object({
-  email: z.string().trim().email('Entered email is invalid'),
-  password: z.string().min(1, 'Password is required'),
-});
+Real auth and org APIs. JWT access/refresh tokens, bcrypt password hashing, zod-validated env, shared pagination/validation helpers, auth + RBAC + rate-limit middleware, and full department/employee CRUD. App mounts auth, departments, and employees only; other domains land later hours. Shared `Actor` type lives in `lib/actor.ts` so later modules can import it without circular timing issues. Server boots Ann's notification scheduler (same-hour collaboration).
 
-type FormValues = z.infer<typeof schema>;
+## Files
 
-export function LoginPage() {
-  const { login } = useAuth();
-  const navigate = useNavigate();
-  const form = useForm<FormValues>({ resolver: zodResolver(schema) });
-  const { errors, isSubmitting } = form.formState;
+- `backend/package.json`
+- `backend/src/config/env.ts`
+- `backend/src/lib/prisma.ts`
+- `backend/src/lib/jwt.ts`
+- `backend/src/lib/password.ts`
+- `backend/src/lib/validation.ts`
+- `backend/src/lib/pagination.ts`
+- `backend/src/lib/actor.ts`
+- `backend/src/middleware/auth.ts`
+- `backend/src/middleware/rbac.ts`
+- `backend/src/middleware/rate-limit.ts`
+- `backend/src/middleware/request-logger.ts`
+- `backend/src/middleware/error-handler.ts`
+- `backend/src/types/express.d.ts`
+- `backend/src/modules/auth/auth.controller.ts`
+- `backend/src/modules/auth/auth.routes.ts`
+- `backend/src/modules/auth/auth.schemas.ts`
+- `backend/src/modules/auth/auth.service.ts`
+- `backend/src/modules/departments/department.controller.ts`
+- `backend/src/modules/departments/department.routes.ts`
+- `backend/src/modules/departments/department.schemas.ts`
+- `backend/src/modules/departments/department.service.ts`
+- `backend/src/modules/employees/employee.controller.ts`
+- `backend/src/modules/employees/employee.routes.ts`
+- `backend/src/modules/employees/employee.schemas.ts`
+- `backend/src/modules/employees/employee.service.ts`
+- `backend/src/server.ts`
+- `backend/src/app.ts`
 
-  const onSubmit = form.handleSubmit(async (values) => {
-    try {
-      await login(values.email, values.password);
-      navigate('/');
-    } catch (err) {
-      form.setError('root', {
-        message: err instanceof ApiError ? err.message : 'Could not sign in. Please try again.',
-      });
-    }
-  });
+## Suggested commit message
 
-  return (
-    <AuthLayout title="Sign in" subtitle="Use your organization account to continue.">
-      <form onSubmit={onSubmit} className="space-y-4" noValidate>
-        <Field label="Email" htmlFor="email" error={errors.email?.message} required>
-          <Input id="email" type="email" autoComplete="email" placeholder="you@company.com" {...form.register('email')} />
-        </Field>
-        <Field label="Password" htmlFor="password" error={errors.password?.message} required>
-          <Input id="password" type="password" autoComplete="current-password" placeholder="••••••••" {...form.register('password')} />
-        </Field>
-        {errors.root && (
-          <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-[13px] font-medium text-state-lost">
-            {errors.root.message}
-          </p>
-        )}
-        <Button type="submit" loading={isSubmitting} className="w-full">
-          Sign in
-        </Button>
-        <div className="flex items-center justify-between text-[13px]">
-          <Link to="/forgot-password" className="font-medium text-primary-strong hover:underline">
-            Forgot password?
-          </Link>
-          <Link to="/signup" className="font-medium text-primary-strong hover:underline">
-            Create an account
-          </Link>
-        </div>
-      </form>
-    </AuthLayout>
-  );
-}
+```
+feat(auth): JWT auth, RBAC middleware, departments and employees APIs
+```
+
+## Smoke test
+
+1. In backend/: `npm install && npx prisma migrate dev && npx prisma db seed && npm run dev`
+2. POST /api/v1/auth/login with admin@assetflow.io / Admin@123 returns tokens; GET /api/v1/departments with Bearer token returns departments
+3. POST /api/v1/auth/signup creates EMPLOYEE only; employee token gets 403 on role-changing routes
