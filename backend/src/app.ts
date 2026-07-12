@@ -17,6 +17,7 @@ import { auditRouter } from './modules/audits/audit.routes';
 import { notificationRouter } from './modules/notifications/notification.routes';
 import { activityRouter } from './modules/activity/activity.routes';
 import { reportRouter } from './modules/reports/report.routes';
+import { dashboardRouter } from './modules/dashboard/dashboard.routes';
 
 export function createApp() {
   const app = express();
@@ -41,6 +42,7 @@ export function createApp() {
   app.use('/api/v1/notifications', notificationRouter);
   app.use('/api/v1/activity', activityRouter);
   app.use('/api/v1/reports', reportRouter);
+  app.use('/api/v1/dashboard', dashboardRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found.' } });
