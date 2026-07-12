@@ -13,6 +13,8 @@ import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { OrganizationPage } from '../features/organization/OrganizationPage';
 import { AssetsPage } from '../features/assets/AssetsPage';
 import { AssetDetailPage } from '../features/assets/AssetDetailPage';
+import { AllocationsPage } from '../features/allocations/AllocationsPage';
+import { ReportsPage } from '../features/reports/ReportsPage';
 
 function FullPageSpinner() {
   return (
@@ -69,12 +71,12 @@ export function AppRoutes() {
           <Route index element={<DashboardPage />} />
           <Route path="assets" element={<AssetsPage />} />
           <Route path="assets/:id" element={<AssetDetailPage />} />
-          <Route path="allocations" element={<Placeholder title="Allocation & Transfers" />} />
+          <Route path="allocations" element={<AllocationsPage />} />
           <Route path="bookings" element={<Placeholder title="Resource Booking" />} />
           <Route path="maintenance" element={<Placeholder title="Maintenance" />} />
           <Route path="audits" element={<Placeholder title="Asset Audits" />} />
           <Route path="audits/:id" element={<Placeholder title="Audit cycle" />} />
-          <Route path="reports" element={<Placeholder title="Reports & Analytics" />} />
+          <Route path="reports" element={<ReportsPage />} />
           <Route path="activity" element={<Placeholder title="Activity & Notifications" />} />
           <Route path="organization" element={<RequireAdmin><OrganizationPage /></RequireAdmin>} />
         </Route>
