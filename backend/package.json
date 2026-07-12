@@ -1,12 +1,14 @@
 {
   "name": "assetflow-backend",
   "version": "1.0.0",
-  "description": "AssetFlow \u2014 Enterprise Asset & Resource Management System (API)",
+  "description": "AssetFlow — Enterprise Asset & Resource Management System (API)",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
@@ -23,20 +25,23 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^4.22.2",
+    "express-rate-limit": "^8.5.2",
     "helmet": "^8.3.0",
-    "zod": "^4.4.3",
     "jsonwebtoken": "^9.0.3",
-    "express-rate-limit": "^8.5.2"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.1.1",
+    "@types/supertest": "^7.2.0",
     "prisma": "^6.19.3",
+    "supertest": "^7.2.2",
     "tsx": "^4.23.0",
     "typescript": "^7.0.2",
-    "@types/jsonwebtoken": "^9.0.10"
+    "vitest": "^4.1.10"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
