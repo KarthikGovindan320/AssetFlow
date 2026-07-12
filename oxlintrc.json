@@ -1,0 +1,8 @@
+DATABASE_URL="postgresql://assetflow:assetflow_dev@localhost:5432/assetflow?schema=public"
+PORT=4000
+CORS_ORIGIN="http://localhost:5173"
+JWT_ACCESS_SECRET="replace-with-long-random-string"
+JWT_REFRESH_SECRET="replace-with-another-long-random-string"
+ACCESS_TOKEN_TTL="15m"
+REFRESH_TOKEN_TTL_DAYS=7
+BCRYPT_ROUNDS=10
