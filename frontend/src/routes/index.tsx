@@ -1,9 +1,7 @@
 import type { ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { Construction, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { AppShell } from '../components/layout/app-shell';
-import { EmptyState, PageHeader } from '../components/shared/states';
-import { Card } from '../components/ui/primitives';
 import { useAuth, usePermissions } from '../lib/auth';
 import { LoginPage } from '../features/auth/LoginPage';
 import { SignupPage } from '../features/auth/SignupPage';
@@ -14,7 +12,12 @@ import { OrganizationPage } from '../features/organization/OrganizationPage';
 import { AssetsPage } from '../features/assets/AssetsPage';
 import { AssetDetailPage } from '../features/assets/AssetDetailPage';
 import { AllocationsPage } from '../features/allocations/AllocationsPage';
+import { BookingsPage } from '../features/bookings/BookingsPage';
+import { MaintenancePage } from '../features/maintenance/MaintenancePage';
+import { AuditsPage } from '../features/audits/AuditsPage';
+import { AuditCycleDetailPage } from '../features/audits/AuditCycleDetailPage';
 import { ReportsPage } from '../features/reports/ReportsPage';
+import { ActivityPage } from '../features/activity/ActivityPage';
 
 function FullPageSpinner() {
   return (
@@ -44,21 +47,6 @@ function PublicOnly({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-function Placeholder({ title }: { title: string }) {
-  return (
-    <>
-      <PageHeader title={title} />
-      <Card>
-        <EmptyState
-          icon={Construction}
-          title="Screen under construction"
-          description="The layout shell is in place; this screen goes live once its API endpoints are wired up."
-        />
-      </Card>
-    </>
-  );
-}
-
 export function AppRoutes() {
   return (
     <BrowserRouter>
@@ -72,12 +60,12 @@ export function AppRoutes() {
           <Route path="assets" element={<AssetsPage />} />
           <Route path="assets/:id" element={<AssetDetailPage />} />
           <Route path="allocations" element={<AllocationsPage />} />
-          <Route path="bookings" element={<Placeholder title="Resource Booking" />} />
-          <Route path="maintenance" element={<Placeholder title="Maintenance" />} />
-          <Route path="audits" element={<Placeholder title="Asset Audits" />} />
-          <Route path="audits/:id" element={<Placeholder title="Audit cycle" />} />
+          <Route path="bookings" element={<BookingsPage />} />
+          <Route path="maintenance" element={<MaintenancePage />} />
+          <Route path="audits" element={<AuditsPage />} />
+          <Route path="audits/:id" element={<AuditCycleDetailPage />} />
           <Route path="reports" element={<ReportsPage />} />
-          <Route path="activity" element={<Placeholder title="Activity & Notifications" />} />
+          <Route path="activity" element={<ActivityPage />} />
           <Route path="organization" element={<RequireAdmin><OrganizationPage /></RequireAdmin>} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
