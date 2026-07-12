@@ -1,0 +1,62 @@
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-sans/700.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+
+  --color-primary: #0f766e;
+  --color-primary-strong: #115e59;
+  --color-primary-soft: #ccfbf1;
+  --color-primary-chart: #0d9488;
+
+  --color-ink: #1b2432;
+  --color-ink-soft: #4b5563;
+  --color-ink-faint: #9ca3af;
+  --color-surface: #f6f7f9;
+  --color-card: #ffffff;
+  --color-line: #e5e7eb;
+
+  --color-chart-1: #0d9488;
+  --color-chart-2: #6366f1;
+  --color-chart-3: #d97706;
+
+  --color-state-available: #16a34a;
+  --color-state-allocated: #2563eb;
+  --color-state-reserved: #d97706;
+  --color-state-maintenance: #ea580c;
+  --color-state-lost: #dc2626;
+  --color-state-retired: #64748b;
+  --color-state-disposed: #3f3f46;
+}
+
+html {
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  background: var(--color-surface);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
