@@ -1,15 +1,15 @@
-import { Request, Response, Router } from 'express';
+import { Router } from 'express';
+import { asyncHandler } from '../../middleware/async-handler';
+import { requireAuth } from '../../middleware/auth';
+import { authRateLimiter } from '../../middleware/rate-limit';
+import * as controller from './auth.controller';
 
 export const authRouter = Router();
 
-function notImplemented(_req: Request, res: Response) {
-  res.status(501).json({
-    error: { code: 'NOT_IMPLEMENTED', message: 'This endpoint is not available yet.' },
-  });
-}
-
-authRouter.post('/signup', notImplemented);
-authRouter.post('/login', notImplemented);
-authRouter.post('/refresh', notImplemented);
-authRouter.post('/logout', notImplemented);
-authRouter.get('/me', notImplemented);
+authRouter.post('/signup', authRateLimiter, asyncHandler(controller.signup));
+authRouter.post('/login', authRateLimiter, asyncHandler(controller.login));
+authRouter.post('/refresh', asyncHandler(controller.refresh));
+authRouter.post('/forgot-password', authRateLimiter, asyncHandler(controller.forgotPassword));
+authRouter.post('/reset-password', authRateLimiter, asyncHandler(controller.resetPassword));
+authRouter.post('/logout', requireAuth, asyncHandler(controller.logout));
+authRouter.get('/me', requireAuth, asyncHandler(controller.me));
